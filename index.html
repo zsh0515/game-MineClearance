@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扫雷游戏</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .game-container {
+            background: linear-gradient(145deg, #e0e0e0, #c0c0c0);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.4),
+                inset 1px 1px 0 #fff,
+                inset -1px -1px 0 #808080;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .game-header h1 {
+            font-size: 28px;
+            color: #333;
+            text-shadow: 1px 1px 0 #fff;
+            letter-spacing: 2px;
+        }
+
+        /* 最佳记录面板 */
+        .records-panel {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .record-card {
+            background: linear-gradient(135deg, #f8f8f8, #e8e8e8);
+            padding: 10px 16px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 100px;
+            box-shadow: 
+                inset -1px -1px 0 #aaa,
+                inset 1px 1px 0 #fff;
+        }
+
+        .record-card.beginner { border-left: 4px solid #4CAF50; }
+        .record-card.intermediate { border-left: 4px solid #FF9800; }
+        .record-card.expert { border-left: 4px solid #f44336; }
+
+        .record-card .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .record-card .time {
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .record-card .time.none {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .record-card .trophy {
+            margin-left: 4px;
+        }
+
+        /* 难度选择 */
+        .difficulty-panel {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            background: linear-gradient(to bottom, #f0f0f0, #d0d0d0);
+            border: none;
+            border-radius: 6px;
+            color: #333;
+            cursor: pointer;
+            box-shadow: 
+                inset -1px -1px 0 #808080,
+                inset 1px 1px 0 #fff;
+            transition: all 0.15s;
+        }
+
+        .difficulty-btn:hover {
+            background: linear-gradient(to bottom, #fff, #e0e0e0);
+        }
+
+        .difficulty-btn.active {
+            background: linear-gradient(to bottom, #c0c0c0, #a0a0a0);
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #c0c0c0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-display {
+            background: #000;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 22px;
+            font-weight: bold;
+            color: #f00;
+            min-width: 60px;
+            text-align: center;
+            box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .face-btn {
+            width: 48px;
+            height: 48px;
+            font-size: 28px;
+            background: linear-gradient(to bottom, #f0f0f0, #d0d0d0);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 
+                inset -2px -2px 0 #808080,
+                inset 2px 2px 0 #fff;
+            transition: transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .face-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .face-btn:active {
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 游戏棋盘 */
+        .game-board {
+            display: grid;
+            gap: 0;
+            background: #808080;
+            padding: 4px;
+            border-radius: 4px;
+            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.4);
+            user-select: none;
+        }
+
+        .cell {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(135deg, #d0d0d0, #c0c0c0);
+            border: none;
+            box-shadow: 
+                inset -1px -1px 0 #808080,
+                inset 1px 1px 0 #fff;
+            transition: background 0.1s;
+        }
+
+        .cell:hover:not(.revealed) {
+            background: linear-gradient(135deg, #e0e0e0, #d0d0d0);
+        }
+
+        .cell:active:not(.revealed) {
+            box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.revealed {
+            background: #d8d8d8;
+            box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.2);
+            cursor: default;
+        }
+
+        .cell.num-1 { color: #0066cc; }
+        .cell.num-2 { color: #008800; }
+        .cell.num-3 { color: #cc0000; }
+        .cell.num-4 { color: #000088; }
+        .cell.num-5 { color: #880000; }
+        .cell.num-6 { color: #008888; }
+        .cell.num-7 { color: #000000; }
+        .cell.num-8 { color: #888888; }
+
+        /* 游戏消息 */
+        .game-message {
+            text-align: center;
+            margin-top: 12px;
+            padding: 10px;
+            font-size: 16px;
+            color: #333;
+            background: linear-gradient(to bottom, #f0f0f0, #d8d8d8);
+            border-radius: 8px;
+            box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-message.new-record {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #333;
+            font-weight: bold;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: #e0e0e0;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            min-width: 280px;
+        }
+
+        .modal-box h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .form-row label {
+            font-size: 14px;
+            color: #444;
+        }
+
+        .form-row input {
+            width: 80px;
+            padding: 8px 10px;
+            font-size: 16px;
+            border: 2px solid #808080;
+            border-radius: 6px;
+            background: #fff;
+            text-align: center;
+        }
+
+        .form-row input:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel {
+            background: #d0d0d0;
+            color: #333;
+        }
+
+        .btn-cancel:hover {
+            background: #c0c0c0;
+        }
+
+        .btn-confirm {
+            background: linear-gradient(135deg, #4a90d9, #357abd);
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background: linear-gradient(135deg, #5aa0e9, #4589cd);
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .game-container { padding: 12px; }
+            .game-header h1 { font-size: 22px; }
+            .cell { width: 28px; height: 28px; font-size: 14px; }
+            .difficulty-btn { padding: 6px 10px; font-size: 12px; }
+            .status-display { font-size: 18px; min-width: 50px; }
+            .face-btn { width: 40px; height: 40px; font-size: 22px; }
+            .record-card { min-width: 80px; padding: 8px 10px; }
+            .record-card .time { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-wrapper">
+        <!-- 最佳记录面板 -->
+        <div class="records-panel">
+            <div class="record-card beginner">
+                <div class="label">初级 🟢</div>
+                <div class="time none" id="record-beginner">--</div>
+            </div>
+            <div class="record-card intermediate">
+                <div class="label">中级 🟠</div>
+                <div class="time none" id="record-intermediate">--</div>
+            </div>
+            <div class="record-card expert">
+                <div class="label">高级 🔴</div>
+                <div class="time none" id="record-expert">--</div>
+            </div>
+        </div>
+
+        <div class="game-container">
+            <div class="game-header">
+                <h1>💣 扫雷</h1>
+            </div>
+
+            <div class="difficulty-panel">
+                <button class="difficulty-btn active" data-level="beginner">初级</button>
+                <button class="difficulty-btn" data-level="intermediate">中级</button>
+                <button class="difficulty-btn" data-level="expert">高级</button>
+                <button class="difficulty-btn" data-level="custom">自定义</button>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-display">
+                    <span id="mine-count">010</span>
+                </div>
+                <button id="reset-btn" class="face-btn">😊</button>
+                <div class="status-display">
+                    <span id="timer">000</span>
+                </div>
+            </div>
+
+            <div id="game-board" class="game-board"></div>
+
+            <div id="game-message" class="game-message">点击格子开始游戏</div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 配置 ====================
+        const DIFFICULTY = {
+            beginner: { rows: 9, cols: 9, mines: 10, name: '初级' },
+            intermediate: { rows: 16, cols: 16, mines: 40, name: '中级' },
+            expert: { rows: 16, cols: 30, mines: 99, name: '高级' }
+        };
+
+        const GAME_STATUS = {
+            WAITING: 'waiting',
+            PLAYING: 'playing',
+            WON: 'won',
+            LOST: 'lost'
+        };
+
+        // ==================== 最佳记录管理 ====================
+        class Records {
+            constructor() {
+                this.storageKey = 'minesweeper_records';
+                this.records = this.load();
+            }
+
+            load() {
+                try {
+                    const data = localStorage.getItem(this.storageKey);
+                    return data ? JSON.parse(data) : {};
+                } catch (e) {
+                    return {};
+                }
+            }
+
+            save() {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(this.records));
+                } catch (e) {
+                    console.warn('无法保存记录:', e);
+                }
+            }
+
+            get(level) {
+                return this.records[level] || null;
+            }
+
+            set(level, time) {
+                const current = this.records[level];
+                if (!current || time < current) {
+                    this.records[level] = time;
+                    this.save();
+                    return true; // 打破记录
+                }
+                return false;
+            }
+
+            clear() {
+                this.records = {};
+                this.save();
+            }
+        }
+
+        // ==================== 游戏逻辑 ====================
+        class Game {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.level = 'beginner';
+                this.rows = 9;
+                this.cols = 9;
+                this.mineCount = 10;
+                this.status = GAME_STATUS.WAITING;
+                this.grid = [];
+                this.mines = [];
+                this.revealedCount = 0;
+                this.flagCount = 0;
+                this.startTime = null;
+                this.elapsedTime = 0;
+                this.timerId = null;
+                this.callbacks = {};
+            }
+
+            on(event, callback) {
+                this.callbacks[event] = callback;
+            }
+
+            emit(event, data) {
+                if (this.callbacks[event]) {
+                    this.callbacks[event](data);
+                }
+            }
+
+            init(level = 'beginner') {
+                if (this.timerId) {
+                    clearInterval(this.timerId);
+                    this.timerId = null;
+                }
+
+                this.level = level;
+                const config = DIFFICULTY[level] || { rows: 9, cols: 9, mines: 10 };
+                this.rows = config.rows;
+                this.cols = config.cols;
+                this.mineCount = config.mines;
+                
+                this.status = GAME_STATUS.WAITING;
+                this.grid = [];
+                this.mines = [];
+                this.revealedCount = 0;
+                this.flagCount = 0;
+                this.startTime = null;
+                this.elapsedTime = 0;
+
+                for (let r = 0; r < this.rows; r++) {
+                    this.grid[r] = [];
+                    for (let c = 0; c < this.cols; c++) {
+                        this.grid[r][c] = {
+                            row: r, col: c,
+                            isMine: false,
+                            isRevealed: false,
+                            isFlagged: false,
+                            adjacentMines: 0
+                        };
+                    }
+                }
+
+                this.emit('init', this.getState());
+            }
+
+            initCustom(rows, cols, mines) {
+                if (this.timerId) {
+                    clearInterval(this.timerId);
+                    this.timerId = null;
+                }
+
+                this.level = 'custom';
+                this.rows = rows;
+                this.cols = cols;
+                this.mineCount = mines;
+                this.status = GAME_STATUS.WAITING;
+                this.grid = [];
+                this.mines = [];
+                this.revealedCount = 0;
+                this.flagCount = 0;
+                this.startTime = null;
+                this.elapsedTime = 0;
+
+                for (let r = 0; r < rows; r++) {
+                    this.grid[r] = [];
+                    for (let c = 0; c < cols; c++) {
+                        this.grid[r][c] = {
+                            row: r, col: c,
+                            isMine: false,
+                            isRevealed: false,
+                            isFlagged: false,
+                            adjacentMines: 0
+                        };
+                    }
+                }
+
+                this.emit('init', this.getState());
+            }
+
+            placeMines(safeRow, safeCol) {
+                const positions = [];
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        if (Math.abs(r - safeRow) > 1 || Math.abs(c - safeCol) > 1) {
+                            positions.push([r, c]);
+                        }
+                    }
+                }
+
+                for (let i = positions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [positions[i], positions[j]] = [positions[j], positions[i]];
+                }
+
+                this.mines = positions.slice(0, this.mineCount);
+                for (const [r, c] of this.mines) {
+                    this.grid[r][c].isMine = true;
+                }
+
+                this.calculateAdjacent();
+            }
+
+            calculateAdjacent() {
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        if (!this.grid[r][c].isMine) {
+                            this.grid[r][c].adjacentMines = this.countAdjacent(r, c);
+                        }
+                    }
+                }
+            }
+
+            countAdjacent(row, col) {
+                let count = 0;
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        if (dr === 0 && dc === 0) continue;
+                        const nr = row + dr;
+                        const nc = col + dc;
+                        if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+                            if (this.grid[nr][nc].isMine) count++;
+                        }
+                    }
+                }
+                return count;
+            }
+
+            startTimer() {
+                this.startTime = Date.now();
+                this.timerId = setInterval(() => {
+                    this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+                    this.emit('timer', this.elapsedTime);
+                }, 1000);
+            }
+
+            stopTimer() {
+                if (this.timerId) {
+                    clearInterval(this.timerId);
+                    this.timerId = null;
+                }
+            }
+
+            getElapsedTime() {
+                return this.elapsedTime;
+            }
+
+            reveal(row, col) {
+                if (row < 0 || row >= this.rows || col < 0 || col >= this.cols) {
+                    return [];
+                }
+
+                const cell = this.grid[row][col];
+                if (cell.isRevealed || cell.isFlagged) return [];
+
+                if (this.status === GAME_STATUS.WAITING) {
+                    this.placeMines(row, col);
+                    this.status = GAME_STATUS.PLAYING;
+                    this.startTimer();
+                    this.emit('status', GAME_STATUS.PLAYING);
+                }
+
+                if (this.status !== GAME_STATUS.PLAYING) return [];
+
+                cell.isRevealed = true;
+                this.revealedCount++;
+                const revealed = [{ row, col, cell: { ...cell } }];
+
+                if (cell.isMine) {
+                    this.gameOver(false);
+                    return revealed;
+                }
+
+                if (cell.adjacentMines === 0) {
+                    const neighbors = this.getNeighbors(row, col);
+                    for (const n of neighbors) {
+                        if (!n.cell.isRevealed && !n.cell.isFlagged) {
+                            const more = this.reveal(n.row, n.col);
+                            revealed.push(...more);
+                        }
+                    }
+                }
+
+                this.checkWin();
+                return revealed;
+            }
+
+            getNeighbors(row, col) {
+                const neighbors = [];
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        if (dr === 0 && dc === 0) continue;
+                        const nr = row + dr;
+                        const nc = col + dc;
+                        if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+                            neighbors.push({ row: nr, col: nc, cell: this.grid[nr][nc] });
+                        }
+                    }
+                }
+                return neighbors;
+            }
+
+            toggleFlag(row, col) {
+                if (row < 0 || row >= this.rows || col < 0 || col >= this.cols) return null;
+                const cell = this.grid[row][col];
+                if (cell.isRevealed) return null;
+
+                cell.isFlagged = !cell.isFlagged;
+                this.flagCount += cell.isFlagged ? 1 : -1;
+                this.emit('flag', this.mineCount - this.flagCount);
+
+                return { row, col, cell: { ...cell } };
+            }
+
+            chord(row, col) {
+                if (row < 0 || row >= this.rows || col < 0 || col >= this.cols) return [];
+                const cell = this.grid[row][col];
+                if (!cell.isRevealed || cell.adjacentMines === 0) return [];
+                if (this.status !== GAME_STATUS.PLAYING) return [];
+
+                const neighbors = this.getNeighbors(row, col);
+                let flagCount = 0;
+                for (const n of neighbors) {
+                    if (n.cell.isFlagged) flagCount++;
+                }
+
+                if (flagCount === cell.adjacentMines) {
+                    const revealed = [];
+                    for (const n of neighbors) {
+                        if (!n.cell.isRevealed && !n.cell.isFlagged) {
+                            const more = this.reveal(n.row, n.col);
+                            revealed.push(...more);
+                        }
+                    }
+                    return revealed;
+                }
+
+                return [];
+            }
+
+            checkWin() {
+                const totalCells = this.rows * this.cols;
+                const safeCells = totalCells - this.mineCount;
+                if (this.revealedCount === safeCells) {
+                    this.gameOver(true);
+                }
+            }
+
+            gameOver(isWin) {
+                this.stopTimer();
+                this.status = isWin ? GAME_STATUS.WON : GAME_STATUS.LOST;
+                this.emit('status', this.status, isWin);
+
+                if (!isWin) {
+                    for (const [r, c] of this.mines) {
+                        if (!this.grid[r][c].isFlagged) {
+                            this.grid[r][c].isRevealed = true;
+                        }
+                    }
+                }
+            }
+
+            getState() {
+                return {
+                    level: this.level,
+                    rows: this.rows,
+                    cols: this.cols,
+                    mineCount: this.mineCount,
+                    status: this.status,
+                    remaining: this.mineCount - this.flagCount
+                };
+            }
+
+            getMines() {
+                return this.mines.map(([r, c]) => ({ row: r, col: c }));
+            }
+        }
+
+        // ==================== 棋盘渲染 ====================
+        class Board {
+            constructor() {
+                this.element = null;
+                this.rows = 0;
+                this.cols = 0;
+                this.cells = [];
+            }
+
+            init(rows, cols) {
+                this.rows = rows;
+                this.cols = cols;
+                this.element = document.getElementById('game-board');
+
+                if (!this.element) return;
+
+                this.element.style.gridTemplateColumns = `repeat(${cols}, 32px)`;
+                this.element.style.gridTemplateRows = `repeat(${rows}, 32px)`;
+                this.element.innerHTML = '';
+                this.cells = [];
+
+                for (let r = 0; r < rows; r++) {
+                    this.cells[r] = [];
+                    for (let c = 0; c < cols; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = r;
+                        cell.dataset.col = c;
+                        this.element.appendChild(cell);
+                        this.cells[r][c] = cell;
+                    }
+                }
+            }
+
+            updateCell(row, col, data) {
+                if (!this.cells[row] || !this.cells[row][col]) return;
+
+                const cellEl = this.cells[row][col];
+                const cell = data.cell || data;
+
+                cellEl.className = 'cell';
+                cellEl.textContent = '';
+
+                if (cell.isRevealed) {
+                    cellEl.classList.add('revealed');
+                    if (cell.isMine) {
+                        cellEl.textContent = '💣';
+                    } else if (cell.adjacentMines > 0) {
+                        cellEl.textContent = cell.adjacentMines;
+                        cellEl.classList.add('num-' + cell.adjacentMines);
+                    }
+                } else if (cell.isFlagged) {
+                    cellEl.textContent = '🚩';
+                }
+            }
+
+            updateCells(revealedCells) {
+                for (const { row, col, cell } of revealedCells) {
+                    this.updateCell(row, col, { cell });
+                }
+            }
+
+            showMines(mines) {
+                for (const { row, col } of mines) {
+                    const cellEl = this.cells[row][col];
+                    if (cellEl && !cellEl.textContent) {
+                        cellEl.classList.add('revealed');
+                        cellEl.textContent = '💣';
+                    }
+                }
+            }
+        }
+
+        // ==================== 主程序 ====================
+        class Minesweeper {
+            constructor() {
+                this.timerEl = document.getElementById('timer');
+                this.minesEl = document.getElementById('mine-count');
+                this.resetBtn = document.getElementById('reset-btn');
+                this.messageEl = document.getElementById('game-message');
+                this.boardEl = document.getElementById('game-board');
+                this.difficultyBtns = document.querySelectorAll('.difficulty-btn');
+
+                this.game = new Game();
+                this.board = new Board();
+                this.records = new Records();
+
+                this.init();
+            }
+
+            init() {
+                // 加载并显示最佳记录
+                this.updateRecordsDisplay();
+
+                this.game.on('init', (state) => this.onGameInit(state));
+                this.game.on('status', (status, isWin) => this.onStatusChange(status, isWin));
+                this.game.on('timer', (time) => this.onTimerUpdate(time));
+                this.game.on('flag', (remaining) => this.onFlagUpdate(remaining));
+
+                this.difficultyBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const level = btn.dataset.level;
+                        if (level === 'custom') {
+                            this.showCustomDialog();
+                        } else {
+                            this.setDifficulty(level);
+                        }
+                    });
+                });
+
+                this.resetBtn.addEventListener('click', () => this.reset());
+
+                this.boardEl.addEventListener('click', (e) => this.onClick(e));
+                this.boardEl.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.onRightClick(e);
+                });
+                this.boardEl.addEventListener('dblclick', (e) => this.onDoubleClick(e));
+
+                this.setDifficulty('beginner');
+            }
+
+            // 更新最佳记录显示
+            updateRecordsDisplay() {
+                const levels = ['beginner', 'intermediate', 'expert'];
+                for (const level of levels) {
+                    const record = this.records.get(level);
+                    const el = document.getElementById(`record-${level}`);
+                    if (record) {
+                        el.textContent = this.formatTime(record);
+                        el.classList.remove('none');
+                    } else {
+                        el.textContent = '--';
+                        el.classList.add('none');
+                    }
+                }
+            }
+
+            // 格式化时间显示
+            formatTime(seconds) {
+                if (seconds < 60) {
+                    return `${seconds}秒`;
+                }
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}分${secs}秒`;
+            }
+
+            setDifficulty(level) {
+                this.difficultyBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.level === level);
+                });
+                this.game.init(level);
+            }
+
+            reset() {
+                this.game.init(this.game.level);
+            }
+
+            onGameInit(state) {
+                this.board.init(state.rows, state.cols);
+                this.updateTimer(0);
+                this.updateMines(state.mineCount);
+                this.updateMessage('点击格子开始游戏');
+                this.messageEl.classList.remove('new-record');
+                this.updateFace('waiting');
+            }
+
+            onStatusChange(status, isWin) {
+                switch (status) {
+                    case GAME_STATUS.PLAYING:
+                        this.updateMessage('扫雷中...');
+                        this.updateFace('playing');
+                        break;
+                    case GAME_STATUS.WON:
+                        this.updateFace('win');
+                        this.autoFlagMines();
+                        this.handleWin();
+                        break;
+                    case GAME_STATUS.LOST:
+                        this.updateMessage('💥 游戏结束！');
+                        this.updateFace('lost');
+                        this.showAllMines();
+                        break;
+                }
+            }
+
+            handleWin() {
+                const level = this.game.level;
+                const time = this.game.getElapsedTime();
+
+                // 只有标准难度才记录
+                if (level in DIFFICULTY) {
+                    const isNewRecord = this.records.set(level, time);
+                    
+                    if (isNewRecord) {
+                        // 打破记录
+                        this.updateMessage(`🏆 新纪录！${this.formatTime(time)}`);
+                        this.messageEl.classList.add('new-record');
+                        this.updateRecordsDisplay();
+                    } else {
+                        const best = this.records.get(level);
+                        this.updateMessage(`🎉 恭喜获胜！用时 ${this.formatTime(time)}（最佳 ${this.formatTime(best)}）`);
+                    }
+                } else {
+                    this.updateMessage(`🎉 恭喜获胜！用时 ${this.formatTime(time)}`);
+                }
+            }
+
+            onTimerUpdate(time) {
+                this.updateTimer(time);
+            }
+
+            onFlagUpdate(remaining) {
+                this.updateMines(remaining);
+            }
+
+            onClick(e) {
+                const cellEl = e.target.closest('.cell');
+                if (!cellEl) return;
+                const row = parseInt(cellEl.dataset.row);
+                const col = parseInt(cellEl.dataset.col);
+                const revealed = this.game.reveal(row, col);
+                this.board.updateCells(revealed);
+            }
+
+            onRightClick(e) {
+                const cellEl = e.target.closest('.cell');
+                if (!cellEl) return;
+                const row = parseInt(cellEl.dataset.row);
+                const col = parseInt(cellEl.dataset.col);
+                const result = this.game.toggleFlag(row, col);
+                if (result) {
+                    this.board.updateCell(row, col, result);
+                }
+            }
+
+            onDoubleClick(e) {
+                const cellEl = e.target.closest('.cell');
+                if (!cellEl) return;
+                const row = parseInt(cellEl.dataset.row);
+                const col = parseInt(cellEl.dataset.col);
+                const revealed = this.game.chord(row, col);
+                this.board.updateCells(revealed);
+            }
+
+            showCustomDialog() {
+                const html = `
+                    <div class="modal-overlay" id="custom-modal">
+                        <div class="modal-box">
+                            <h3>自定义难度</h3>
+                            <div class="form-row">
+                                <label>行数 (9-24):</label>
+                                <input type="number" id="custom-rows" value="9" min="9" max="24">
+                            </div>
+                            <div class="form-row">
+                                <label>列数 (9-30):</label>
+                                <input type="number" id="custom-cols" value="9" min="9" max="30">
+                            </div>
+                            <div class="form-row">
+                                <label>地雷数:</label>
+                                <input type="number" id="custom-mines" value="10" min="1" max="200">
+                            </div>
+                            <div class="modal-buttons">
+                                <button class="btn-cancel" id="modal-cancel">取消</button>
+                                <button class="btn-confirm" id="modal-confirm">确定</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const div = document.createElement('div');
+                div.innerHTML = html;
+                const modal = div.firstElementChild;
+                document.body.appendChild(modal);
+
+                modal.querySelector('#modal-cancel').addEventListener('click', () => modal.remove());
+                modal.querySelector('#modal-confirm').addEventListener('click', () => {
+                    const rows = parseInt(modal.querySelector('#custom-rows').value) || 9;
+                    const cols = parseInt(modal.querySelector('#custom-cols').value) || 9;
+                    const mines = parseInt(modal.querySelector('#custom-mines').value) || 10;
+
+                    const validRows = Math.max(9, Math.min(24, rows));
+                    const validCols = Math.max(9, Math.min(30, cols));
+                    const maxMines = validRows * validCols - 9;
+                    const validMines = Math.max(1, Math.min(maxMines, mines));
+
+                    this.difficultyBtns.forEach(btn => btn.classList.remove('active'));
+                    this.game.initCustom(validRows, validCols, validMines);
+                    modal.remove();
+                });
+
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.remove();
+                });
+            }
+
+            autoFlagMines() {
+                const mines = this.game.getMines();
+                for (const { row, col } of mines) {
+                    if (!this.game.grid[row][col].isFlagged) {
+                        this.game.toggleFlag(row, col);
+                        this.board.updateCell(row, col, { cell: this.game.grid[row][col] });
+                    }
+                }
+            }
+
+            showAllMines() {
+                this.board.showMines(this.game.getMines());
+            }
+
+            updateTimer(time) {
+                this.timerEl.textContent = String(Math.min(999, time)).padStart(3, '0');
+            }
+
+            updateMines(count) {
+                this.minesEl.textContent = String(Math.max(-99, Math.min(999, count))).padStart(3, '0').replace('-', '−');
+            }
+
+            updateMessage(msg) {
+                this.messageEl.textContent = msg;
+            }
+
+            updateFace(status) {
+                const faces = { waiting: '😊', playing: '🙂', win: '😎', lost: '😵' };
+                this.resetBtn.textContent = faces[status] || '😊';
+            }
+        }
+
+        // 启动游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            new Minesweeper();
+        });
+    </script>
+</body>
+</html>
